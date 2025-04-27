@@ -12,3 +12,8 @@ type User struct {
 	LastName  string
 }
 
+// 定義 IsMember 方法
+func (u *User) IsMember() bool {
+	// 實現邏輯，例如檢查某些條件
+	return true // 或根據業務邏輯返回適當的值
+}

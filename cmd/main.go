@@ -16,15 +16,19 @@ import (
 	authModels "mcbach/internal/auth/models"
 	authRepositories "mcbach/internal/auth/repositories"
 	authServices "mcbach/internal/auth/services"
-	commentControllers "mcbach/internal/comment/controllers"
-	commentRepositories "mcbach/internal/comment/repositories"
+	"mcbach/internal/comment/controllers"
+	"mcbach/internal/comment/models"
+	"mcbach/internal/comment/repositories"
 	commentServices "mcbach/internal/comment/services"
+
+	// commentControllers "mcbach/internal/comment/controllers"
 	config "mcbach/internal/config"
 	relations "mcbach/internal/relations"
 	spotifyControllers "mcbach/internal/spotify/controllers"
 	spotifyServices "mcbach/internal/spotify/services"
 	userControllers "mcbach/internal/user/controllers"
 	userRepositories "mcbach/internal/user/repositories"
+	"mcbach/internal/user/services"
 	userServices "mcbach/internal/user/services"
 
 	"github.com/gin-gonic/gin"
@@ -99,7 +103,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 // func getUserProfile(accessToken string) {
 // 	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/me", nil)
-// 	if err != nil {
+// 	if (err != nil) {
 // 		log.Fatalf("無法建立請求: %v", err)
 // 	}
 
@@ -107,7 +111,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 // 	client := &http.Client{}
 // 	resp, err := client.Do(req)
-// 	if err != nil {
+// 	if (err != nil) {
 // 		log.Fatalf("無法發送請求: %v", err)
 // 	}
 // 	defer resp.Body.Close()
@@ -140,10 +144,14 @@ func main() {
 		&albumModels.Album{},
 		&relations.AlbumArtist{},
 		&authModels.User{},
+		&models.Comment{},
+		&models.Like{}, // 確保包含 Like 模型
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 	log.Println("Database migration successful!")
+
+	db.AutoMigrate(&models.Comment{})
 
 	// 初始化 Spotify 服務
 	spotifyService := spotifyServices.NewSpotifyService()
@@ -155,9 +163,10 @@ func main() {
 	userController := userControllers.NewUserController(userService)
 
 	// 初始化 Comment 服務
-	commentRepo := commentRepositories.NewCommentRepository(db)
-	commentService := commentServices.NewCommentService(commentRepo)
-	commentController := commentControllers.NewCommentController(commentService)
+	commentRepo := repositories.NewCommentRepository(db) // 確保正確初始化 CommentRepository
+	userService = services.NewUserService(userRepo)      // 確保正確初始化 UserService
+	commentService := commentServices.NewCommentService(commentRepo, userService)
+	commentController := controllers.NewCommentController(commentService) // 使用建構函數初始化
 
 	// 初始化 Auth 服務
 	authRepo := authRepositories.NewUserRepository(db)
@@ -198,6 +207,9 @@ func main() {
 		commentRoutes.POST("", commentController.CreateComment)
 		commentRoutes.PUT("/:id", commentController.EditComment)
 		commentRoutes.DELETE("/:id", commentController.DeleteComment)
+		commentRoutes.POST("/:id/like", commentController.AddLike)
+		commentRoutes.POST("/:id/pro-like", commentController.AddProLike)
+		commentRoutes.GET("/top-users", commentController.GetTopUsers)
 	}
 
 	// 註冊 Auth 路由
@@ -205,6 +217,7 @@ func main() {
 	{
 		authRoutes.POST("/signup", authController.Signup)
 		authRoutes.POST("/signin", authController.Signin)
+		authRoutes.POST("/signout", authController.Signout) // 新增登出路由
 	}
 
 	// 註冊 Album 路由

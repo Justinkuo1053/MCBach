@@ -52,3 +52,8 @@ func (ac *AuthController) Signin(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"access_token": token})
 }
+
+func (ac *AuthController) Signout(c *gin.Context) {
+	// 假設使用的是 JWT，這裡可以返回一個空的 Token 或設置黑名單
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully signed out"})
+}

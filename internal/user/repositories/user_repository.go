@@ -29,3 +29,8 @@ func (r *UserRepository) Update(userID uint, updates map[string]interface{}) (*m
 	}
 	return &user, nil
 }
+
+func (r *UserRepository) GetUserByID(id uint) (*models.User, error) {
+	// 實現邏輯，例如從資料庫獲取數據
+	return nil, nil
+}
