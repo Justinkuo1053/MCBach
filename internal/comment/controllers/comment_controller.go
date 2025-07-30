@@ -78,14 +78,15 @@ func (cc *CommentController) EditComment(c *gin.Context) {
 }
 
 func (cc *CommentController) DeleteComment(c *gin.Context) {
-	commentID := c.Param("id") // 從路由參數中獲取評論 ID
-
-	if commentID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Comment ID is required"})
+	commentID, err := strconv.Atoi(c.Param("id")) // 從路由參數中獲取評論 ID並轉換為整數
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid comment ID"})
 		return
 	}
 
-	err := cc.commentService.DeleteCommentByID(commentID)
+	userID := c.GetUint("userID") // 從 JWT 中獲取 userID
+
+	err = cc.commentService.DeleteComment(userID, uint(commentID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
